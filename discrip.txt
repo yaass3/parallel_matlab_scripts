@@ -1,0 +1,103 @@
+Dear Hoofar,
+
+Based on our talk, attached you can find the M-File. The aim of this M-File is solving a 24 odes (ordinary differential equations) simultaneously by ode15s. After running I got the following warning, without any results,
+
+"Warning: Failure at t=0.000000e+00.  Unable to meet integration tolerances without
+reducing the step size below the smallest value allowed (7.905050e-323) at time t."
+
+I was wondering if you negotiate with Mathwork staff to solve this problem. Besides, more information is available upon request.
+
+auk241@psu.edu
+	
+Apr 13 
+
+
+
+
+
+
+when building the function, 
+dzdtg6pdh= NaN, kiA=0 in initiated as zero, and therefore dcdtNADP, dcdtNADPH and few more are NaN
+
+if you set it forexample to kiA= 0.02 for testing you get the plot but just for a very short period. the error messege then is:
+Warning: Failure at t=4.694131e-03.  Unable to meet
+integration tolerances without reducing the step size below
+the smallest value allowed (1.387779e-17) at time t. 
+> In ode15s at 669
+  In MatlabCode at 11 
+
+
+
+
+The reason is:
+dzdtg6pdh is first calculated in line 64:
+dzdtg6pdh=((Vf*G6P*NADP)/(KiA*KmB)-(Vr*PGL*NADPH)/(KiQ*KmP))/(1+G6P/KiA+(KmA*NADP)/(KiA*KmB)+PGL*KmQ/KmP*KiQ+NADPH/KiQ+(G6P*NADP)/(KiA*KmB)+(G6P*PGL*KmQ)/(KiA*KmP*KiQ)+(KmA*NADP*NADPH)/(KiA*KmB*KiQ)+(PGL*NADPH)/(KmP*KiQ)+(G6P*PGL*NADP)/(KiA*KmB*KiP)+(NADP*PGL*NADPH)/(KiB*KmP*KiQ));
+
+kiB= 0.002
+kmP=0.02
+kiQ=4.5900
+kiA= 1e-4
+KmB= 0.002
+
+Now the product for example for one of the terms is divided by: 
+kib*kiQ*kiA
+which is less than 1e-8. This makes the matrix element too high, causing the intergration method to diverge.
+
+
+
+Get the coeff. matrix then,
+
+1- check for the linear indipendence,
+2-check for stiffness, you can consult the paragraph below:
+Identifying a stiff system is one of the more important steps in the process of numerical integration. As noted above, a nonstiff solver is much less efficient than a stiff solver. While not rules, the following tips might help you in identifying a stiff system.
+
+    If the eigenvalues are obtainable, or available, a measure of stiffness can be calculated. This stiffness ratio is the ratio of the eigenvalue with the largest magnitude to the eigenvalue with the smallest magnitude. In the stiff system above, the eigenvalues are -1 and -1000, giving a stiffness ratio of 1000.
+    If the region of integration is on a region with no transient, the equation is not stiff. A stiff equation must have a transient. In the system above, this transient is close to the origin. This transient dies out quickly, giving two time scales over the time of integration.
+    Understanding what you are modeling is a great advantage when you are choosing a solver, esepcially in this instance. If you expect behaviors on different scales, you might want to choose a stiff solver.
+    Finally, and somewhat unfortunately, you might want to choose a stiff solver if you have tried a nonstiff solver and found it to be very inefficient and time-consuming.
+
+3- if the matrix was stiff, try implicit methods, you can try implicit method for a transient phase seperately and use stiff based methods like ode15c over the lefted span for integration.
+
+4- use SPY function to check the behaviour of the Coefficient matrix.
+5- re-build your coefficient matrix with the available methods, linear algebra, and apply ode integration methods.
+
+
+
+at i=9 after plotting eight lines, the eignevalues for z (first 24 by 24) is as below, 
+
+K>> eig(z(1:24,1:24))
+
+ans =
+
+  24.0445          
+  -0.0932          
+  -0.0007 + 0.0014i
+  -0.0007 - 0.0014i
+   0.0005          
+  -0.0001          
+  -0.0000          
+  -0.0000 + 0.0000i
+  -0.0000 - 0.0000i
+   0.0000 + 0.0000i
+   0.0000 - 0.0000i
+   0.0000          
+  -0.0000          
+   0.0000 + 0.0000i
+   0.0000 - 0.0000i
+   0.0000          
+   0.0000 + 0.0000i
+   0.0000 - 0.0000i
+   0.0000          
+  -0.0000          
+   0.0000 + 0.0000i
+   0.0000 - 0.0000i
+  -0.0000          
+  -0.0000          
+
+K>>
+
+This shows that the first six equations should be emphasized as they contribute more to your solution, the rest are acting as dependant equations. So the model should be changed. It's also safe to double check your matrix, as I don't know exactly how you need more than 24 elements in your z matrix.
+
+Hoofar
+
+

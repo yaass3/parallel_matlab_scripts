@@ -1,0 +1,10 @@
+#PBS -l nodes=2:ppn=1
+#PBS -l walltime=168:00:00
+#PBS -l pmem=10gb
+#PBS -q lionxj-cdm
+#PBS -j oe
+set -u
+
+cd $PBS_O_WORKDIR
+module load matlab
+matlab -nosplash -nodisplay -r brute
